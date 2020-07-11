@@ -175,6 +175,8 @@ class ExposureTip extends StatefulWidget {
 class _ExposureTipState extends State<ExposureTip> {
   int first;
   int last;
+  List<int> export = [];
+  ScrollController scrollController = ScrollController();
 
   @override
   void initState() {
@@ -186,6 +188,17 @@ class _ExposureTipState extends State<ExposureTip> {
   }
 
   void updateExposureTip(int first, int last) {
+    assert(first != null && last != null);
+    if (first < last) {
+      for (int i = first; i <= last; i++) {
+        if (this.first == null || i < this.first || i > this.last) {
+          export.add(i);
+        }
+      }
+    }
+    if(scrollController.hasClients){
+      scrollController.jumpTo(scrollController.position.maxScrollExtent);
+    }
     setState(() {
       this.first = first;
       this.last = last;
@@ -194,7 +207,7 @@ class _ExposureTipState extends State<ExposureTip> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    Widget content = Container(
       margin: EdgeInsets.symmetric(vertical: 5),
       alignment: Alignment.center,
       child: Text.rich(TextSpan(children: <InlineSpan>[
@@ -202,13 +215,28 @@ class _ExposureTipState extends State<ExposureTip> {
         TextSpan(
             text: '$first \n',
             style: TextStyle(
-                color: Colors.red, fontSize: 15, fontWeight: FontWeight.bold)),
+                color: Colors.red, fontSize: 20, fontWeight: FontWeight.bold)),
         TextSpan(text: '当前最后一个完全可见元素下标:'),
         TextSpan(
             text: '$last ',
             style: TextStyle(
-                color: Colors.red, fontSize: 15, fontWeight: FontWeight.bold)),
+                color: Colors.red, fontSize: 20, fontWeight: FontWeight.bold)),
       ])),
+    );
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          alignment: Alignment.center,
+          height: 40,
+          child: SingleChildScrollView(
+            controller: scrollController,
+            scrollDirection: Axis.horizontal,
+            child: Text('曝光元素列表: ${export.join("、")}'),
+          ),
+        ),
+        content
+      ],
     );
   }
 }
@@ -240,7 +268,7 @@ class ExposureListener extends StatelessWidget {
   bool _onNotification(ScrollNotification notice) {
     final sliverMultiBoxAdaptorElement = findSliverMultiBoxAdaptorElement(
         sliverKey?.currentContext ?? notice.context);
-    assert(sliverMultiBoxAdaptorElement != null);
+    if (sliverMultiBoxAdaptorElement == null) return false;
     int firstIndex = sliverMultiBoxAdaptorElement.childCount;
     assert(firstIndex != null);
     int endIndex = -1;
